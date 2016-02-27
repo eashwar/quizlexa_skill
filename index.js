@@ -11,7 +11,17 @@
 
 var AlexaSkill = require('./AlexaSkill');
 var Firebase = require('firebase');
-var cardsets = new Firebase("https://quizlet.firebaseio.com/");
+var cardsets = new Firebase("https://quizlet.firebaseio.com/"); 
+
+var count = 0;
+cardsets.on("child_added", function(snap) {
+  count++;
+  console.log("added", snap.key());
+});
+
+cardsets.once("value", function(snap) {
+  console.log("initial data loaded!", Object.keys(snap.val()).length === count);
+});
 
 var correctAnswer;
 
@@ -42,7 +52,7 @@ Quizlexa.prototype.intentHandlers = {
             cardSetName = cardSlot.value.toLowerCase();
         }
         
-        var whichCardSet = getRandomInt(0, cardsets.cardSetName.length());
+        var whichCardSet = getRandomInt(0, cardsets.cardSetName.length);
         var whichCard = getRandomInt(0, cardsets.cardSetName[whichCardSet].terms.length);
         var whichAnswerCorrect = getRandomInt(0, 100);
         
