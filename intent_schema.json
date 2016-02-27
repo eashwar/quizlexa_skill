@@ -1,0 +1,17 @@
+{
+  "intents": [
+    {
+      "intent": "GetCardSet",
+      "slots": [
+        {
+          "name": "CardStack",
+          "type": "LIST_OF_STACKS"
+        },
+        {
+            "name": "CardNumber",
+            "type": "AMAZON.NUMBER"
+        }
+      ]
+    }
+  ]
+}

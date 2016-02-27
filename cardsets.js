@@ -1,0 +1,15 @@
+module.exports = {
+"science" : 
+"chemistry" :
+"biology" :
+"physics" : 
+"philosophy" : 
+"social studies" : 
+"world history" : 
+"US history" : 
+"math" : 
+"geometry" : 
+"algebra" : 
+"calculus" : 
+"literature" :       
+}
