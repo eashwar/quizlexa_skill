@@ -1,3 +1,5 @@
+var cardsets = []
+
 module.exports = {
 "science" : 
 "chemistry" :
