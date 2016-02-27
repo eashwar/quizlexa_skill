@@ -10,8 +10,10 @@
 'use strict';
 
 var AlexaSkill = require('./AlexaSkill');
-var cardsets = require('./cardsets');
+var Firebase = require('firebase');
+var cardsets = new Firebase("https://quizlet.firebaseio.com/");
 
+var correctAnswer;
 
 var APP_ID = undefined; //replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
 
@@ -31,24 +33,55 @@ Quizlexa.prototype.eventHandlers.onLaunch = function (launchRequest, session, re
     response.ask(speechText, repromptText);
 };
 
-Quizlexa.prototype.intentHandlers = {
+Quizlexa.prototype.intentHandlers = {  
     "GetCardSet": function (intent, session, response) {
+        
         var cardSlot = intent.slots.CardStack,
             cardSetName;
         if (cardSlot && cardSlot.value){
             cardSetName = cardSlot.value.toLowerCase();
         }
+        
+        var whichCardSet = getRandomInt(0, cardsets.cardSetName.length());
+        var whichCard = getRandomInt(0, cardsets.cardSetName[whichCardSet].terms.length);
+        var whichAnswerCorrect = getRandomInt(0, 100);
+        
+        var choiceA, choiceB;
+        
+        if (whichAnswerCorrect%2 == 0)
+        {
+            choiceA = cardsets.cardSetName[whichCardSet].terms[whichCard].definition;
+            correctAnswer = "a";
+        }
+        else
+        {
+            choiceA = cardsets.cardSetName[whichCardSet].terms[((whichCard + 1) > (cardsets.cardSetName[whichCardSet].terms.length - 1)) ? 0 : (whichCard + 1)].definition; //if i add and it exceeds the array limit, go down to zero.
+        }
+        if (whichAnswerCorrect%2 == 1)
+        {
+            choiceB = cardsets.cardSetName[whichCardSet].terms[whichCard].definition;
+            correctAnswer = "b";
+        }
+        else
+        {
+            choiceB = cardsets.cardSetName[whichCardSet].terms[((whichCard + 1) > (cardsets.cardSetName[whichCardSet].terms.length - 1)) ? 0 : (whichCard + 1)].definition;
+        }
+        
+        var term = cardsets.cardSetName[whichCardSet].terms[whichCard].term;     
 
-        var cardTitle = "Recipe for " + cardSetName,
-            cardSet = cardsets[cardSetName],
-            speechOutput,
+
+        var speechOutput,
             repromptOutput;
-        if (cardSet) {
+        if (choiceA && choiceB) {
             speechOutput = {
-                speech: cardSet,
+                speech: "For the term " + term + " what is the correct definition? Is it A: " + choiceA + " or B: " + choiceB + " ?",
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
             };
-            response.tellWithCard(speechOutput, cardTitle, cardSet);
+            repromptOutput = {
+                speech: "Again, the term is " + term + " and the choices are A: " + choiceA + " or B: " + choiceB + " ?",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            };
+            response.ask(speechOutput, repromptOutput);
         } else {
             var speech;
             if (cardSetName) {
@@ -67,7 +100,18 @@ Quizlexa.prototype.intentHandlers = {
             response.ask(speechOutput, repromptOutput);
         }
     },
-
+    "PickAnswer": function (intent, session, response) {
+         var answerChoices = intent.slots.Answer,
+            currentChoice;
+        if (answerChoices && answerChoices.value){
+            currentChoice = answerChoices.value.toLowerCase();
+        }
+        
+        if (currentChoice == correctAnswer)
+        {
+            
+        }
+    },
     "AMAZON.StopIntent": function (intent, session, response) {
         var speechOutput = "Thanks for using Quizlexa.";
         response.tell(speechOutput);
@@ -92,6 +136,9 @@ Quizlexa.prototype.intentHandlers = {
         response.ask(speechOutput, repromptOutput);
     }
 };
+function getRandomInt(min, max) { //max value is excluded
+  return Math.floor(Math.random() * (max - min)) + min;
+}
 
 exports.handler = function (event, context) {
     var quizlexa = new Quizlexa();

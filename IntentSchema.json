@@ -2,16 +2,30 @@
   "intents": [
     {
       "intent": "GetCardSet",
-      "slots": [
+      "slots":[
         {
           "name": "CardStack",
           "type": "LIST_OF_STACKS"
-        },
-        {
-            "name": "CardNumber",
-            "type": "AMAZON.NUMBER"
         }
       ]
+    },
+    {
+      "intent": "PickAnswer",
+      "slots":[
+          {
+              "name": "Answer",
+              "type": "LIST_OF_ANSWERS"
+          }
+      ]
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.CancelIntent"
     }
   ]
 }
