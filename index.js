@@ -107,9 +107,21 @@ Quizlexa.prototype.intentHandlers = {
             currentChoice = answerChoices.value.toLowerCase();
         }
         
+        var speechOutput;
+        
         if (currentChoice == correctAnswer)
         {
-            
+            speechOutput = {
+                speech: "Correct! Nice Job.",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            }
+        }
+        else
+        {
+             speechOutput = {
+                speech: "Nope! Try again.",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            }
         }
     },
     "AMAZON.StopIntent": function (intent, session, response) {
