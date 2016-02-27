@@ -10,18 +10,11 @@
 'use strict';
 
 var AlexaSkill = require('./AlexaSkill');
-var Firebase = require('firebase');
-var cardsets = new Firebase("https://quizlet.firebaseio.com/"); 
+var cardsets;
 
-var count = 0;
-cardsets.on("child_added", function(snap) {
-  count++;
-  console.log("added", snap.key());
-});
+var jsonpClient = require('jsonp-client');
 
-cardsets.once("value", function(snap) {
-  console.log("initial data loaded!", Object.keys(snap.val()).length === count);
-});
+
 
 var correctAnswer;
 
@@ -52,32 +45,39 @@ Quizlexa.prototype.intentHandlers = {
             cardSetName = cardSlot.value.toLowerCase();
         }
         
-        var whichCardSet = getRandomInt(0, cardsets.cardSetName.length);
-        var whichCard = getRandomInt(0, cardsets.cardSetName[whichCardSet].terms.length);
-        var whichAnswerCorrect = getRandomInt(0, 100);
+        var term, choiceA, choiceB, whichCard, whichAnswerCorrect;
         
-        var choiceA, choiceB;
+        jsonpClient('https://quizlet.firebaseio.com/' + cardSetName + '.json', function (err, data) 
+        {
+                cardsets = data;
+                whichCard = getRandomInt(0, cardsets.length);
+                whichAnswerCorrect = getRandomInt(0, 100);
+                
+                choiceA, choiceB;
+                
+                if (whichAnswerCorrect%2 == 0)
+                {
+                    choiceA = cardsets[whichCard].definition;
+                    correctAnswer = "a";
+                }
+                else
+                {
+                    choiceA = cardsets[((whichCard + 1) > (cardsets.length - 1)) ? 0 : (whichCard + 1)].definition; //if i add and it exceeds the array limit, go down to zero.
+                }
+                if (whichAnswerCorrect%2 == 1)
+                {
+                    choiceB = cardsets[whichCard].definition;
+                    correctAnswer = "b";
+                }
+                else
+                {
+                    choiceB = cardsets[((whichCard + 1) > (cardsets.length - 1)) ? 0 : (whichCard + 1)].definition;
+                }
+                
+                term = cardsets[whichCard].term; 
+        });
         
-        if (whichAnswerCorrect%2 == 0)
-        {
-            choiceA = cardsets.cardSetName[whichCardSet].terms[whichCard].definition;
-            correctAnswer = "a";
-        }
-        else
-        {
-            choiceA = cardsets.cardSetName[whichCardSet].terms[((whichCard + 1) > (cardsets.cardSetName[whichCardSet].terms.length - 1)) ? 0 : (whichCard + 1)].definition; //if i add and it exceeds the array limit, go down to zero.
-        }
-        if (whichAnswerCorrect%2 == 1)
-        {
-            choiceB = cardsets.cardSetName[whichCardSet].terms[whichCard].definition;
-            correctAnswer = "b";
-        }
-        else
-        {
-            choiceB = cardsets.cardSetName[whichCardSet].terms[((whichCard + 1) > (cardsets.cardSetName[whichCardSet].terms.length - 1)) ? 0 : (whichCard + 1)].definition;
-        }
-        
-        var term = cardsets.cardSetName[whichCardSet].terms[whichCard].term;     
+    
 
 
         var speechOutput,
