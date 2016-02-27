@@ -10,11 +10,12 @@
 'use strict';
 
 var AlexaSkill = require('./AlexaSkill');
-var cardsets;
 
-var jsonpClient = require('jsonp-client');
+var Firebase = require('firebase');
 
+var cardsets, cardset;
 
+var term, choiceA, choiceB, whichCard, whichAnswerCorrect, canAsk, speechOutput, repromptOutput;
 
 var correctAnswer;
 
@@ -36,53 +37,24 @@ Quizlexa.prototype.eventHandlers.onLaunch = function (launchRequest, session, re
     response.ask(speechText, repromptText);
 };
 
-Quizlexa.prototype.intentHandlers = {  
+Quizlexa.prototype.intentHandlers = {
     "GetCardSet": function (intent, session, response) {
-        
+
         var cardSlot = intent.slots.CardStack,
             cardSetName;
-        if (cardSlot && cardSlot.value){
+        if (cardSlot && cardSlot.value) {
             cardSetName = cardSlot.value.toLowerCase();
         }
-        
-        var term, choiceA, choiceB, whichCard, whichAnswerCorrect;
-        
-        jsonpClient('https://quizlet.firebaseio.com/' + cardSetName + '.json', function (err, data) 
-        {
-                cardsets = data;
-                whichCard = getRandomInt(0, cardsets.length);
-                whichAnswerCorrect = getRandomInt(0, 100);
-                
-                choiceA, choiceB;
-                
-                if (whichAnswerCorrect%2 == 0)
-                {
-                    choiceA = cardsets[whichCard].definition;
-                    correctAnswer = "a";
-                }
-                else
-                {
-                    choiceA = cardsets[((whichCard + 1) > (cardsets.length - 1)) ? 0 : (whichCard + 1)].definition; //if i add and it exceeds the array limit, go down to zero.
-                }
-                if (whichAnswerCorrect%2 == 1)
-                {
-                    choiceB = cardsets[whichCard].definition;
-                    correctAnswer = "b";
-                }
-                else
-                {
-                    choiceB = cardsets[((whichCard + 1) > (cardsets.length - 1)) ? 0 : (whichCard + 1)].definition;
-                }
-                
-                term = cardsets[whichCard].term; 
-        });
-        
-    
 
 
-        var speechOutput,
-            repromptOutput;
-        if (choiceA && choiceB) {
+        cardsets = new Firebase('https://quizlet.firebaseio.com/' + cardSetName + '/');
+
+        setCardset(function () { generateQuestion(); });
+
+
+
+
+        if (canAsk) {
             speechOutput = {
                 speech: "For the term " + term + " what is the correct definition? Is it A: " + choiceA + " or B: " + choiceB + " ?",
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
@@ -111,24 +83,22 @@ Quizlexa.prototype.intentHandlers = {
         }
     },
     "PickAnswer": function (intent, session, response) {
-         var answerChoices = intent.slots.Answer,
+        var answerChoices = intent.slots.Answer,
             currentChoice;
-        if (answerChoices && answerChoices.value){
+        if (answerChoices && answerChoices.value) {
             currentChoice = answerChoices.value.toLowerCase();
         }
-        
+
         var speechOutput;
-        
-        if (currentChoice == correctAnswer)
-        {
+
+        if (currentChoice == correctAnswer) {
             speechOutput = {
                 speech: "Correct! Nice Job.",
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
             }
         }
-        else
-        {
-             speechOutput = {
+        else {
+            speechOutput = {
                 speech: "Nope! Try again.",
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
             }
@@ -159,7 +129,43 @@ Quizlexa.prototype.intentHandlers = {
     }
 };
 function getRandomInt(min, max) { //max value is excluded
-  return Math.floor(Math.random() * (max - min)) + min;
+    return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function setCardset(callback) {
+    setTimeout(function () {
+
+        cardsets.once("value", function (data) {
+            cardset = data.val;
+        });
+        callback && callback();
+    }, 3000);
+}
+
+function generateQuestion() {
+    whichCard = getRandomInt(0, cardset.length);
+    whichAnswerCorrect = getRandomInt(0, 100);
+
+    choiceA, choiceB;
+
+    if (whichAnswerCorrect % 2 == 0) {
+        choiceA = cardset[whichCard].definition;
+        correctAnswer = "a";
+    }
+    else {
+        choiceA = cardset[((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)].definition; //if i add and it exceeds the array limit, go down to zero.
+    }
+    if (whichAnswerCorrect % 2 == 1) {
+        choiceB = cardset[whichCard].definition;
+        correctAnswer = "b";
+    }
+    else {
+        choiceB = cardset[((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)].definition;
+    }
+
+    term = cardset[whichCard].term;
+    canAsk = true;
+
 }
 
 exports.handler = function (event, context) {
