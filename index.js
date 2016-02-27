@@ -12,6 +12,7 @@
 var AlexaSkill = require('./AlexaSkill');
 var cardsets = require('./cardsets');
 
+
 var APP_ID = undefined; //replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
 
 var Quizlexa = function () {
