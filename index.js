@@ -17,10 +17,11 @@ var Async = require('async');
 
 var cardsets;
 
-var correctAnswer, whichCard, whichAnswerCorrect;
+var correctAnswer;
 
-var qGen = false;
-var prevqGen;
+var counter = 0;
+
+var whichCard, whichAnswerCorrect;
 
 var APP_ID = undefined; //replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
 
@@ -33,7 +34,7 @@ Quizlexa.prototype = Object.create(AlexaSkill.prototype);
 Quizlexa.prototype.constructor = Quizlexa;
 
 Quizlexa.prototype.eventHandlers.onLaunch = function (launchRequest, session, response) {
-    var speechText = "Welcome to Quizlexa. You can ask for a card from any of the sets that you've added on your Android application.";
+    var speechText = "Welcome to Quizlexa. You can ask for a card from any of the sets that you've added on your web application.";
     // If the user either does not reply to the welcome message or says something that is not
     // understood, they will be prompted again with this text.
     var repromptText = "For instructions on what you can say, please say help me.";
@@ -89,6 +90,9 @@ Quizlexa.prototype.intentHandlers = {
                 correctAnswer = "a";
             }
 
+            correctAnswer = (whichAnswerCorrect % 2 == 0) ? "a" : "b";
+
+
             console.log("ANSWER SET");
             title = cardset[whichCard].title;
             term = cardset[whichCard].term;
@@ -116,15 +120,15 @@ Quizlexa.prototype.intentHandlers = {
                 setCardset,
                 generateQuestion
             ], function () {
-                qGen = !qGen;
+                console.log('done')
             })
         }
         else {
             var speech;
             if (cardSetName) {
-                speech = "I'm sorry, I couldn't find a card set called " + cardSetName + ". Please check the android app to ensure that you have added a set of that name. What else can I help you with?";
+                speech = "I'm sorry, I couldn't find a card set called " + cardSetName + ". Please check the web app to ensure that you have added a set of that name. What else can I help you with?";
             } else {
-                speech = "I'm sorry, I couldn't find a card set. Please check the android app to ensure that you have added a set. What else can I help you with?";
+                speech = "I'm sorry, I couldn't find a card set. Please check the web app to ensure that you have added a set. What else can I help you with?";
             }
             questionOutput = {
                 speech: speech,
@@ -143,17 +147,30 @@ Quizlexa.prototype.intentHandlers = {
         var answerSlot = intent.slots.Answer,
             currentChoice;
         if (answerSlot && answerSlot.value) {
-            currentChoice = answerSlot.value.toLowerCase();
+            currentChoice = answerSlot.value;
         }
 
-        console.log(correctAnswer);
-        correctAnswer = (whichAnswerCorrect % 2 == 0) ? 'a' : 'b';
+        console.log(currentChoice);
+
+
+        correctAnswer = (whichAnswerCorrect % 2 == 0) ? "a" : "b";
+
 
         var continuePrompt, repromptContinue;
 
-        prevqGen = qGen;
 
-        if (currentChoice == "i don't know") {
+        if (currentChoice == correctAnswer) {
+            continuePrompt = {
+                speech: "Correct! Nice Job. Want to continue?",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            }
+            repromptContinue = {
+                speech: "Do you want to continue?",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            }
+            response.ask(continuePrompt, repromptContinue);
+        }
+        else if (currentChoice.toLowerCase() == "i don't know") {
             continuePrompt = {
                 speech: "Oh. That's too bad. You should've studied more. The correct answer was " + correctAnswer + ". Do you want to continue?",
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
@@ -163,40 +180,28 @@ Quizlexa.prototype.intentHandlers = {
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
             }
             response.ask(continuePrompt, repromptContinue);
-        } else {
-
-            if (currentChoice == correctAnswer) {
-                continuePrompt = {
-                    speech: "Correct! Nice Job. Do you want to continue?",
-                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
-                }
-                repromptContinue = {
-                    speech: "Do you want to continue?",
-                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
-                }
-                response.ask(continuePrompt, repromptContinue);
+        }
+        else {
+            continuePrompt = {
+                speech: "Correct! Nice Job. Do you want to continue?",
+                // speech: "Nope! You were incorrect. Do you want to continue?",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
             }
-            else {
-                continuePrompt = {
-                    speech: "Nope! You were incorrect. Do you want to continue?",
-                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
-                }
-                repromptContinue = {
-                    speech: "Do you want to continue?",
-                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
-                }
-                response.ask(continuePrompt, repromptContinue);
+            repromptContinue = {
+                speech: "Do you want to continue?",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
             }
+            response.ask(continuePrompt, repromptContinue);
         }
 
     },
     "AMAZON.YesIntent": function (intent, session, response) {
         var speechOutput = {
-            speech: "Okay. You can ask me for a card from any stack you have added using the android app.",
+            speech: "Okay. You can ask me for a card from any stack you have added using the web app.",
             type: AlexaSkill.speechOutputType.PLAIN_TEXT
         }
         var repromptText = {
-            speech: "Okay. You can ask me for a card from any stack you have added using the android app.",
+            speech: "Okay. You can ask me for a card from any stack you have added using the web app.",
             type: AlexaSkill.speechOutputType.PLAIN_TEXT
         }
         response.ask(speechOutput, repromptText);
@@ -215,8 +220,8 @@ Quizlexa.prototype.intentHandlers = {
     },
 
     "AMAZON.HelpIntent": function (intent, session, response) {
-        var speechText = "You can ask for a card from a card set that you have added using the android app... Now, what can I help you with?";
-        var repromptText = "You can ask for a card from a card set that you have added using the android app... Now, what can I help you with?";
+        var speechText = "You can ask for a card from a card set that you have added using the web app... Now, what can I help you with?";
+        var repromptText = "You can ask for a card from a card set that you have added using the web app... Now, what can I help you with?";
         var speechOutput = {
             speech: speechText,
             type: AlexaSkill.speechOutputType.PLAIN_TEXT
