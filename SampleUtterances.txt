@@ -4,6 +4,7 @@ GetCardSet {CardStack}
 GetCardSet I want a card from {CardStack}
 GetCardSet Give me something from {CardStack}
 GetCardSet For a card from {CardStack}
+GetCardSet card from {CardStack}
 ...
 PickAnswer The answer is {Answer}
 PickAnswer {Answer}

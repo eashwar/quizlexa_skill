@@ -13,7 +13,9 @@ var AlexaSkill = require('./AlexaSkill');
 
 var Firebase = require('firebase');
 
-var cardsets, cardset;
+var Async = require('async');
+
+var cardsets;
 
 var term, choiceA, choiceB, whichCard, whichAnswerCorrect, canAsk, speechOutput, repromptOutput;
 
@@ -46,41 +48,91 @@ Quizlexa.prototype.intentHandlers = {
             cardSetName = cardSlot.value.toLowerCase();
         }
 
+        console.log("DEFINING CARDSETS");
 
         cardsets = new Firebase('https://quizlet.firebaseio.com/' + cardSetName + '/');
 
-        setCardset(function () { generateQuestion(); });
+        console.log('https://quizlet.firebaseio.com/' + cardSetName + '/');
 
+        console.log("GOING TO START CALLBACK STUFF");
 
+        function setCardset(callback) {
+            console.log("SETTING CARDSET 2");
 
+            return cardsets.once("value").then(function (data) {
+                console.log("Data: " + data.val());
+                var cardset = data.val();
+                callback(null, cardset);
+            });
 
-        if (canAsk) {
-            speechOutput = {
-                speech: "For the term " + term + " what is the correct definition? Is it A: " + choiceA + " or B: " + choiceB + " ?",
-                type: AlexaSkill.speechOutputType.PLAIN_TEXT
-            };
-            repromptOutput = {
-                speech: "Again, the term is " + term + " and the choices are A: " + choiceA + " or B: " + choiceB + " ?",
-                type: AlexaSkill.speechOutputType.PLAIN_TEXT
-            };
-            response.ask(speechOutput, repromptOutput);
-        } else {
-            var speech;
-            if (cardSetName) {
-                speech = "I'm sorry, I could not find a card set called " + cardSetName + ". What else can I help with?";
-            } else {
-                speech = "I'm sorry, I could not find a card set. What else can I help with?";
-            }
-            speechOutput = {
-                speech: speech,
-                type: AlexaSkill.speechOutputType.PLAIN_TEXT
-            };
-            repromptOutput = {
-                speech: "What else can I help with?",
-                type: AlexaSkill.speechOutputType.PLAIN_TEXT
-            };
-            response.ask(speechOutput, repromptOutput);
         }
+
+        function generateQuestion(cardset, callback) {
+            console.log("CALLBACK FUNCTION CALLED")
+            console.log(cardset)
+            whichCard = getRandomInt(0, cardset.length);
+            whichAnswerCorrect = getRandomInt(0, 100);
+
+            if (whichAnswerCorrect % 2 == 0) {
+                choiceA = cardset[whichCard].definition;
+                correctAnswer = "a";
+            }
+            else {//((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)
+                choiceA = cardset[0].definition; //if i add and it exceeds the array limit, go down to zero.
+            }
+            if (whichAnswerCorrect % 2 == 1) {
+                choiceB = cardset[whichCard].definition;
+                correctAnswer = "b";
+            }
+            else {//((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)
+                choiceB = cardset[0].definition;
+            }
+
+            console.log("ANSEWRS SET");
+
+            term = cardset[whichCard].term;
+
+            if (cardset) {
+                speechOutput = {
+                    speech: "For the term " + term + " what is the correct definition? Is it A: " + choiceA + " or B: " + choiceB + " ?",
+                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
+                };
+                repromptOutput = {
+                    speech: "Again, the term is " + term + " and the choices are A: " + choiceA + " or B: " + choiceB + " ?",
+                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
+                };
+                console.log("ASKING QUESTION GOOD");
+                response.ask(speechOutput, repromptOutput);
+            } else {
+                var speech;
+                if (cardSetName) {
+                    speech = "I'm sorry, I could not find a card set called " + cardSetName + ". What else can I help with?";
+                } else {
+                    speech = "I'm sorry, I could not find a card set. What else can I help with?";
+                }
+                speechOutput = {
+                    speech: speech,
+                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
+                };
+                repromptOutput = {
+                    speech: "What else can I help with?",
+                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
+                };
+                console.log("ASKING ERROR QUESTION");
+                response.ask(speechOutput, repromptOutput);
+            }
+            callback();
+        }
+
+        Async.waterfall([
+            setCardset,
+            generateQuestion
+        ], function () {
+            console.log("done")
+        })
+        // setCardset(generateQuestion);
+
+        
     },
     "PickAnswer": function (intent, session, response) {
         var answerChoices = intent.slots.Answer,
@@ -130,42 +182,6 @@ Quizlexa.prototype.intentHandlers = {
 };
 function getRandomInt(min, max) { //max value is excluded
     return Math.floor(Math.random() * (max - min)) + min;
-}
-
-function setCardset(callback) {
-    setTimeout(function () {
-
-        cardsets.once("value", function (data) {
-            cardset = data.val;
-        });
-        callback && callback();
-    }, 3000);
-}
-
-function generateQuestion() {
-    whichCard = getRandomInt(0, cardset.length);
-    whichAnswerCorrect = getRandomInt(0, 100);
-
-    choiceA, choiceB;
-
-    if (whichAnswerCorrect % 2 == 0) {
-        choiceA = cardset[whichCard].definition;
-        correctAnswer = "a";
-    }
-    else {
-        choiceA = cardset[((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)].definition; //if i add and it exceeds the array limit, go down to zero.
-    }
-    if (whichAnswerCorrect % 2 == 1) {
-        choiceB = cardset[whichCard].definition;
-        correctAnswer = "b";
-    }
-    else {
-        choiceB = cardset[((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)].definition;
-    }
-
-    term = cardset[whichCard].term;
-    canAsk = true;
-
 }
 
 exports.handler = function (event, context) {
