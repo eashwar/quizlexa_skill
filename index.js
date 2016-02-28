@@ -141,7 +141,7 @@ Quizlexa.prototype.intentHandlers = {
 
         var continuePrompt, repromptContinue;
 
-        if (currentChoice != correctAnswer) {
+        if (currentChoice == correctAnswer) {
             continuePrompt = {
                 speech: "Correct! Nice Job. Do you want to continue?",
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
