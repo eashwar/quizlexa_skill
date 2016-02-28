@@ -17,11 +17,10 @@ var Async = require('async');
 
 var cardsets;
 
-var cardsetGlobal;
+var correctAnswer, whichCard, whichAnswerCorrect;
 
-var title, term, choiceA, choiceB, whichCard, whichAnswerCorrect, canAsk, questionOutput, repromptQuestion;
-
-var correctAnswer;
+var qGen = false;
+var prevqGen;
 
 var APP_ID = undefined; //replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
 
@@ -69,8 +68,10 @@ Quizlexa.prototype.intentHandlers = {
         function generateQuestion(cardset, callback) {
             console.log("CALLBACK FUNCTION CALLED")
             console.log(cardset.length)
-            cardsetGlobal = cardset;
+            var title, term, choiceA, choiceB;
+
             whichCard = getRandomInt(0, cardset.length);
+
             whichAnswerCorrect = getRandomInt(0, 100);
 
             if (whichAnswerCorrect % 2 == 0) {
@@ -78,10 +79,14 @@ Quizlexa.prototype.intentHandlers = {
                 choiceB = cardset[((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)].definition;
                 correctAnswer = "a";
             }
-            else {
+            else if (whichAnswerCorrect % 2 == 1) {
                 choiceA = cardset[((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)].definition; //if i add and it exceeds the array limit, go down to zero.
                 choiceB = cardset[whichCard].definition;
                 correctAnswer = "b";
+            } else {
+                choiceA = "I AM ERROR.";
+                choiceB = "I AM BAGU."
+                correctAnswer = "a";
             }
 
             console.log("ANSWER SET");
@@ -89,11 +94,11 @@ Quizlexa.prototype.intentHandlers = {
             term = cardset[whichCard].term;
 
             questionOutput = {
-                speech: "The specific subject is: " + title + ". The front side of the card says: " + term + ". What is likely on the other side of the card? Is it A: " + choiceA + " or B: " + choiceB,
+                speech: "The name of the cardset is: " + title + ". The front of the card says: " + term + ". What's probably on the other side? Is it A: " + choiceA + " or B: " + choiceB + ". If you're unsure of your answer, say I don't know.",
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
             };
             repromptQuestion = {
-                speech: "Again, the front side is " + term + " and the choices are A: " + choiceA + " or B: " + choiceB,
+                speech: "Again, the front says " + term + " and the choices are A: " + choiceA + " or B: " + choiceB,
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
             };
             console.log("ASKING QUESTION NOT ERROR");
@@ -103,20 +108,23 @@ Quizlexa.prototype.intentHandlers = {
             callback();
         }
 
+
+        var questionOutput, repromptQuestion;
+
         if (cardsetTypes.indexOf(cardSetName) != -1) {
             Async.waterfall([
                 setCardset,
                 generateQuestion
             ], function () {
-                console.log("done")
+                qGen = !qGen;
             })
         }
         else {
             var speech;
             if (cardSetName) {
-                speech = "I'm sorry, I could not find a card set called " + cardSetName + ". What else can I help with?";
+                speech = "I'm sorry, I couldn't find a card set called " + cardSetName + ". Please check the android app to ensure that you have added a set of that name. What else can I help you with?";
             } else {
-                speech = "I'm sorry, I could not find a card set. What else can I help with?";
+                speech = "I'm sorry, I couldn't find a card set. Please check the android app to ensure that you have added a set. What else can I help you with?";
             }
             questionOutput = {
                 speech: speech,
@@ -129,6 +137,7 @@ Quizlexa.prototype.intentHandlers = {
             console.log("ASKING ERROR QUESTION");
             response.ask(questionOutput, repromptQuestion);
         }
+
     },
     "PickAnswer": function (intent, session, response) {
         var answerSlot = intent.slots.Answer,
@@ -137,13 +146,16 @@ Quizlexa.prototype.intentHandlers = {
             currentChoice = answerSlot.value.toLowerCase();
         }
 
-        console.log(currentChoice);
+        console.log(correctAnswer);
+        correctAnswer = (whichAnswerCorrect % 2 == 0) ? 'a' : 'b';
 
         var continuePrompt, repromptContinue;
 
-        if (currentChoice == correctAnswer) {
+        prevqGen = qGen;
+
+        if (currentChoice == "i don't know") {
             continuePrompt = {
-                speech: "Correct! Nice Job. Do you want to continue?",
+                speech: "Oh. That's too bad. You should've studied more. The correct answer was " + correctAnswer + ". Do you want to continue?",
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
             }
             repromptContinue = {
@@ -151,18 +163,32 @@ Quizlexa.prototype.intentHandlers = {
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
             }
             response.ask(continuePrompt, repromptContinue);
-        }
-        else {
-            continuePrompt = {
-                speech: "Nope! You were incorrect. Do you want to continue?",
-                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+        } else {
+
+            if (currentChoice == correctAnswer) {
+                continuePrompt = {
+                    speech: "Correct! Nice Job. Do you want to continue?",
+                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
+                }
+                repromptContinue = {
+                    speech: "Do you want to continue?",
+                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
+                }
+                response.ask(continuePrompt, repromptContinue);
             }
-            repromptContinue = {
-                speech: "Do you want to continue?",
-                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            else {
+                continuePrompt = {
+                    speech: "Nope! You were incorrect. Do you want to continue?",
+                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
+                }
+                repromptContinue = {
+                    speech: "Do you want to continue?",
+                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
+                }
+                response.ask(continuePrompt, repromptContinue);
             }
-            response.ask(continuePrompt, repromptContinue);
         }
+
     },
     "AMAZON.YesIntent": function (intent, session, response) {
         var speechOutput = {
