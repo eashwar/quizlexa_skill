@@ -1,31 +1,37 @@
 {
-  "intents": [
-    {
-      "intent": "GetCardSet",
-      "slots":[
+    "intents": [
         {
-          "name": "CardStack",
-          "type": "LIST_OF_STACKS"
+            "intent": "GetCardSet",
+            "slots": [
+                {
+                    "name": "CardStack",
+                    "type": "LIST_OF_STACKS"
+                }
+            ]
+        },
+        {
+            "intent": "PickAnswer",
+            "slots": [
+                {
+                    "name": "Answer",
+                    "type": "LIST_OF_ANSWERS"
+                }
+            ]
+        },
+        {
+            "intent": "AMAZON.YesIntent"
+        },
+        {
+            "intent": "AMAZON.NoIntent"
+        },
+        {
+            "intent": "AMAZON.HelpIntent"
+        },
+        {
+            "intent": "AMAZON.StopIntent"
+        },
+        {
+            "intent": "AMAZON.CancelIntent"
         }
-      ]
-    },
-    {
-      "intent": "PickAnswer",
-      "slots":[
-          {
-              "name": "Answer",
-              "type": "LIST_OF_ANSWERS"
-          }
-      ]
-    },
-    {
-      "intent": "AMAZON.HelpIntent"
-    },
-    {
-      "intent": "AMAZON.StopIntent"
-    },
-    {
-      "intent": "AMAZON.CancelIntent"
-    }
-  ]
+    ]
 }

@@ -1,6 +1,5 @@
 GetCardSet give me a card from {CardStack}
 GetCardSet give me a card
-GetCardSet {CardStack}
 GetCardSet I want a card from {CardStack}
 GetCardSet Give me something from {CardStack}
 GetCardSet For a card from {CardStack}
@@ -9,3 +8,4 @@ GetCardSet card from {CardStack}
 PickAnswer The answer is {Answer}
 PickAnswer {Answer}
 PickAnswer My answer is {Answer}
+PickAnswer Is the answer {Answer}

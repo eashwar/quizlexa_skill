@@ -17,7 +17,9 @@ var Async = require('async');
 
 var cardsets;
 
-var term, choiceA, choiceB, whichCard, whichAnswerCorrect, canAsk, speechOutput, repromptOutput;
+var cardsetGlobal;
+
+var title, term, choiceA, choiceB, whichCard, whichAnswerCorrect, canAsk, questionOutput, repromptQuestion;
 
 var correctAnswer;
 
@@ -52,15 +54,12 @@ Quizlexa.prototype.intentHandlers = {
 
         cardsets = new Firebase('https://quizlet.firebaseio.com/' + cardSetName + '/');
 
-        console.log('https://quizlet.firebaseio.com/' + cardSetName + '/');
-
         console.log("GOING TO START CALLBACK STUFF");
 
         function setCardset(callback) {
-            console.log("SETTING CARDSET 2");
+            console.log("SETTING CARDSET");
 
             return cardsets.once("value").then(function (data) {
-                console.log("Data: " + data.val());
                 var cardset = data.val();
                 callback(null, cardset);
             });
@@ -69,98 +68,121 @@ Quizlexa.prototype.intentHandlers = {
 
         function generateQuestion(cardset, callback) {
             console.log("CALLBACK FUNCTION CALLED")
-            console.log(cardset)
+            console.log(cardset.length)
+            cardsetGlobal = cardset;
             whichCard = getRandomInt(0, cardset.length);
             whichAnswerCorrect = getRandomInt(0, 100);
 
             if (whichAnswerCorrect % 2 == 0) {
                 choiceA = cardset[whichCard].definition;
+                choiceB = cardset[((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)].definition;
                 correctAnswer = "a";
             }
-            else {//((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)
-                choiceA = cardset[0].definition; //if i add and it exceeds the array limit, go down to zero.
-            }
-            if (whichAnswerCorrect % 2 == 1) {
+            else {
+                choiceA = cardset[((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)].definition; //if i add and it exceeds the array limit, go down to zero.
                 choiceB = cardset[whichCard].definition;
                 correctAnswer = "b";
             }
-            else {//((whichCard + 1) > (cardset.length - 1)) ? 0 : (whichCard + 1)
-                choiceB = cardset[0].definition;
-            }
 
-            console.log("ANSEWRS SET");
-
+            console.log("ANSWER SET");
+            title = cardset[whichCard].title;
             term = cardset[whichCard].term;
 
-            if (cardset) {
-                speechOutput = {
-                    speech: "For the term " + term + " what is the correct definition? Is it A: " + choiceA + " or B: " + choiceB + " ?",
-                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
-                };
-                repromptOutput = {
-                    speech: "Again, the term is " + term + " and the choices are A: " + choiceA + " or B: " + choiceB + " ?",
-                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
-                };
-                console.log("ASKING QUESTION GOOD");
-                response.ask(speechOutput, repromptOutput);
-            } else {
-                var speech;
-                if (cardSetName) {
-                    speech = "I'm sorry, I could not find a card set called " + cardSetName + ". What else can I help with?";
-                } else {
-                    speech = "I'm sorry, I could not find a card set. What else can I help with?";
-                }
-                speechOutput = {
-                    speech: speech,
-                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
-                };
-                repromptOutput = {
-                    speech: "What else can I help with?",
-                    type: AlexaSkill.speechOutputType.PLAIN_TEXT
-                };
-                console.log("ASKING ERROR QUESTION");
-                response.ask(speechOutput, repromptOutput);
-            }
+            questionOutput = {
+                speech: "The specific subject is: " + title + ". The front side of the card says: " + term + ". What is likely on the other side of the card? Is it A: " + choiceA + " or B: " + choiceB,
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            };
+            repromptQuestion = {
+                speech: "Again, the front side is " + term + " and the choices are A: " + choiceA + " or B: " + choiceB,
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            };
+            console.log("ASKING QUESTION NOT ERROR");
+
+            response.ask(questionOutput, repromptQuestion);
+
             callback();
         }
 
-        Async.waterfall([
-            setCardset,
-            generateQuestion
-        ], function () {
-            console.log("done")
-        })
-        // setCardset(generateQuestion);
-
-        
-    },
-    "PickAnswer": function (intent, session, response) {
-        var answerChoices = intent.slots.Answer,
-            currentChoice;
-        if (answerChoices && answerChoices.value) {
-            currentChoice = answerChoices.value.toLowerCase();
-        }
-
-        var speechOutput;
-
-        if (currentChoice == correctAnswer) {
-            speechOutput = {
-                speech: "Correct! Nice Job.",
-                type: AlexaSkill.speechOutputType.PLAIN_TEXT
-            }
+        if (cardsetTypes.indexOf(cardSetName) != -1) {
+            Async.waterfall([
+                setCardset,
+                generateQuestion
+            ], function () {
+                console.log("done")
+            })
         }
         else {
-            speechOutput = {
-                speech: "Nope! Try again.",
+            var speech;
+            if (cardSetName) {
+                speech = "I'm sorry, I could not find a card set called " + cardSetName + ". What else can I help with?";
+            } else {
+                speech = "I'm sorry, I could not find a card set. What else can I help with?";
+            }
+            questionOutput = {
+                speech: speech,
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            };
+            repromptQuestion = {
+                speech: "What else can I help with?",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            };
+            console.log("ASKING ERROR QUESTION");
+            response.ask(questionOutput, repromptQuestion);
+        }
+    },
+    "PickAnswer": function (intent, session, response) {
+        var answerSlot = intent.slots.Answer,
+            currentChoice;
+        if (answerSlot && answerSlot.value) {
+            currentChoice = answerSlot.value.toLowerCase();
+        }
+
+        console.log(currentChoice);
+
+        var continuePrompt, repromptContinue;
+
+        if (currentChoice != correctAnswer) {
+            continuePrompt = {
+                speech: "Correct! Nice Job. Do you want to continue?",
                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
             }
+            repromptContinue = {
+                speech: "Do you want to continue?",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            }
+            response.ask(continuePrompt, repromptContinue);
         }
+        else {
+            continuePrompt = {
+                speech: "Nope! You were incorrect. Do you want to continue?",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            }
+            repromptContinue = {
+                speech: "Do you want to continue?",
+                type: AlexaSkill.speechOutputType.PLAIN_TEXT
+            }
+            response.ask(continuePrompt, repromptContinue);
+        }
+    },
+    "AMAZON.YesIntent": function (intent, session, response) {
+        var speechOutput = {
+            speech: "Okay. You can ask me for a card from any stack you have added using the android app.",
+            type: AlexaSkill.speechOutputType.PLAIN_TEXT
+        }
+        var repromptText = {
+            speech: "Okay. You can ask me for a card from any stack you have added using the android app.",
+            type: AlexaSkill.speechOutputType.PLAIN_TEXT
+        }
+        response.ask(speechOutput, repromptText);
+    },
+    "AMAZON.NoIntent": function (intent, session, response) {
+        var speechOutput = "Thanks for using Quizlexa.";
+        response.tell(speechOutput);
     },
     "AMAZON.StopIntent": function (intent, session, response) {
         var speechOutput = "Thanks for using Quizlexa.";
         response.tell(speechOutput);
     },
-
     "AMAZON.CancelIntent": function (intent, session, response) {
         var speechOutput = "Thanks for using Quizlexa.";
         response.tell(speechOutput);
@@ -180,9 +202,27 @@ Quizlexa.prototype.intentHandlers = {
         response.ask(speechOutput, repromptOutput);
     }
 };
+
 function getRandomInt(min, max) { //max value is excluded
     return Math.floor(Math.random() * (max - min)) + min;
 }
+
+var cardsetTypes =
+    [
+        'science',
+        'chemistry',
+        'biology',
+        'physics',
+        'philosophy',
+        'social studies',
+        'world history',
+        'US history',
+        'math',
+        'geometry',
+        'algebra',
+        'calculus',
+        'literature',
+    ]
 
 exports.handler = function (event, context) {
     var quizlexa = new Quizlexa();
