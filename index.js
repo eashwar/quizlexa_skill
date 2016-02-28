@@ -222,6 +222,8 @@ var cardsetTypes =
         'algebra',
         'calculus',
         'literature',
+        'general',
+        'hackathon'
     ]
 
 exports.handler = function (event, context) {

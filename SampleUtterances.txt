@@ -1,11 +1,29 @@
 GetCardSet give me a card from {CardStack}
-GetCardSet give me a card
+GetCardSet give me a card about {CardStack}
+GetCardSet I want a card about {CardStack}
 GetCardSet I want a card from {CardStack}
-GetCardSet Give me something from {CardStack}
-GetCardSet For a card from {CardStack}
+GetCardSet give me something from {CardStack}
+GetCardSet give me a card about {CardStack}
+GetCardSet for a card from {CardStack}
+GetCardSet for a card about {CardStack}
 GetCardSet card from {CardStack}
-...
+GetCardSet card about {CardStack}
+GetCardSet give me another card from {CardStack}
+GetCardSet give me another card about {CardStack}
+GetCardSet give me a flash card from {CardStack}
+GetCardSet give me a flash card about {CardStack}
+GetCardSet I want a flash card about {CardStack}
+GetCardSet I want a flash card from {CardStack}
+GetCardSet give me something from {CardStack}
+GetCardSet give me a flash card about {CardStack}
+GetCardSet for a flash card from {CardStack}
+GetCardSet for a flash card about {CardStack}
+GetCardSet flash card from {CardStack}
+GetCardSet flash card about {CardStack}
+GetCardSet give me another flash card from {CardStack}
+GetCardSet give me another flash card about {CardStack}
 PickAnswer The answer is {Answer}
 PickAnswer {Answer}
 PickAnswer My answer is {Answer}
 PickAnswer Is the answer {Answer}
+PickAnswer I think the answer is {Answer}
